@@ -1,66 +1,156 @@
-# app.py
-from flask import Flask, render_template, request
-from asprg_data import FRAMEWORKS
+<!-- templates/index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ASPRG - Client Intake</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-gray-100 p-8">
+    <div class="max-w-4xl mx-auto bg-white p-10 rounded-xl shadow-lg">
+        <h1 class="text-4xl font-extrabold text-gray-900 mb-4">
+            <i class="fas fa-tools text-indigo-500 mr-2"></i>Automated Security Policy Generator
+        </h1>
+        <p class="text-gray-600 mb-8">
+            Please fill out the form below to generate a customized security policy and risk assessment.
+        </p>
 
-app = Flask(__name__)
+        <form action="/generate-report" method="post" class="space-y-6">
+            <div>
+                <label for="client_name" class="block text-sm font-medium text-gray-700">Client Name</label>
+                <input type="text" name="client_name" id="client_name" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2 border" required>
+            </div>
+            
+            <div>
+                <label for="business_goals" class="block text-sm font-medium text-gray-700">Client Business Goals (brief description)</label>
+                <textarea name="business_goals" id="business_goals" rows="3" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2 border" required></textarea>
+            </div>
 
-# New dictionary for dynamic content based on business goals
-DYNAMIC_CONTENT = {
-    "e-commerce": {
-        "policy_statements": [{"text": "A policy for secure online payment processing must be established and documented.", "reference": "Dynamic Recommendation"}],
-        "technical_controls": [{"text": "Implement a secure web application firewall (WAF) to protect the e-commerce platform.", "reference": "Dynamic Recommendation"}],
-    },
-    "expansion": {
-        "policy_statements": [{"text": "Legal and compliance teams must review data residency requirements before expanding into new jurisdictions.", "reference": "Dynamic Recommendation"}],
-        "technical_controls": [{"text": "Perform a Privacy Impact Assessment (PIA) for any new products or services in different markets.", "reference": "Dynamic Recommendation"}],
-    }
-}
-
-def add_dynamic_content(business_goals, policy_list, controls_list):
-    """Adds dynamic content to the report based on keywords in business goals."""
-    goals_lower = business_goals.lower()
-    for keyword, content in DYNAMIC_CONTENT.items():
-        if keyword in goals_lower:
-            policy_list.extend(content["policy_statements"])
-            controls_list.extend(content["technical_controls"])
-    return policy_list, controls_list
-
-@app.route('/', methods=['GET'])
-def index():
-    """Renders the main form for client input."""
-    return render_template('index.html', frameworks=FRAMEWORKS.keys(), frameworks_data=FRAMEWORKS)
-
-@app.route('/generate-report', methods=['POST'])
-def generate_report():
-    """Generates the security policy and risk report based on form input."""
-    client_name = request.form['client_name']
-    business_goals = request.form['business_goals']
-    selected_framework = request.form['framework_selection']
-    selected_domains = request.form.getlist('security_domains')
+            <div>
+                <label for="framework_selection" class="block text-sm font-medium text-gray-700">Select Compliance Framework</label>
+                <select name="framework_selection" id="framework_selection" onchange="updateDomains()" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 p-2 border">
+                    {% for framework in frameworks %}
+                    <option value="{{ framework }}">{{ framework }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Select Security Domains</label>
+                <p class="text-gray-500 text-xs mb-2">Choose the areas you want to include in the report based on the selected framework.</p>
+                <div id="domains-container" class="mt-1 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <!-- Checkboxes will be dynamically added here by JavaScript -->
+                </div>
+            </div>
+            
+            <div>
+                <button type="submit" class="w-full inline-flex justify-center py-3 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                    Generate Report <i class="fas fa-arrow-right ml-2"></i>
+                </button>
+            </div>
+        </form>
+    </div>
     
-    generated_policy = []
-    generated_controls = []
-    generated_risks = []
-    
-    if selected_framework in FRAMEWORKS:
-        for domain in selected_domains:
-            if domain in FRAMEWORKS[selected_framework]["domains"]:
-                generated_policy.extend(FRAMEWORKS[selected_framework]["domains"][domain]["policy_statements"])
-                generated_controls.extend(FRAMEWORKS[selected_framework]["domains"][domain]["technical_controls"])
-                generated_risks.extend(FRAMEWORKS[selected_framework]["domains"][domain]["risk_checklist"])
+    <script>
+        const frameworksData = {{ frameworks_data | tojson }};
+        const frameworkSelect = document.getElementById('framework_selection');
+        const domainsContainer = document.getElementById('domains-container');
 
-    # Call the new function to add dynamic content
-    generated_policy, generated_controls = add_dynamic_content(business_goals, generated_policy, generated_controls)
+        function updateDomains() {
+            const selectedFramework = frameworkSelect.value;
+            const domains = frameworksData[selectedFramework].domains;
+            domainsContainer.innerHTML = '';
 
-    return render_template(
-        'report.html',
-        client_name=client_name,
-        business_goals=business_goals,
-        framework_name=selected_framework,
-        policy=generated_policy,
-        controls=generated_controls,
-        risks=generated_risks
-    )
+            for (const domain in domains) {
+                const label = document.createElement('label');
+                label.className = 'inline-flex items-center bg-gray-50 p-4 rounded-md shadow-sm border border-gray-200';
+                
+                const input = document.createElement('input');
+                input.type = 'checkbox';
+                input.name = 'security_domains';
+                input.value = domain;
+                input.className = 'form-checkbox h-5 w-5 text-indigo-600 rounded-md';
 
-if __name__ == '__main__':
-    app.run(debug=True)
+                const span = document.createElement('span');
+                span.className = 'ml-2 text-gray-700 font-medium';
+                span.textContent = domain;
+
+                label.appendChild(input);
+                label.appendChild(span);
+                domainsContainer.appendChild(label);
+            }
+        }
+        
+        updateDomains();
+    </script>
+</body>
+</html>
+```html
+<!-- templates/report.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ASPRG - Report for {{ client_name }}</title>
+    <script src="[https://cdn.tailwindcss.com](https://cdn.tailwindcss.com)"></script>
+    <link rel="stylesheet" href="[https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css](https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css)">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-gray-100 p-8">
+    <div class="max-w-5xl mx-auto bg-white p-10 rounded-xl shadow-lg">
+        <h1 class="text-4xl font-extrabold text-gray-900 mb-4">
+            <i class="fas fa-file-invoice text-indigo-500 mr-2"></i>Generated Security Report
+        </h1>
+        <p class="text-gray-600 mb-8">
+            This report was generated for **{{ client_name }}** based on the **{{ framework_name }}** framework and their business goals: *{{ business_goals }}*.
+        </p>
+        
+        <div class="space-y-12">
+            <div>
+                <h2 class="text-2xl font-bold text-gray-800 mb-4 border-b-2 pb-2">
+                    <i class="fas fa-shield-alt text-green-500 mr-2"></i>Proposed Security Policy
+                </h2>
+                <ul class="list-disc list-inside space-y-2 text-gray-700">
+                    {% for item in policy %}
+                    <li class="pl-4"><span class="font-medium">{{ item.text }}</span> <span class="text-gray-500 text-sm ml-2">({{ item.reference }})</span></li>
+                    {% endfor %}
+                </ul>
+            </div>
+
+            <div>
+                <h2 class="text-2xl font-bold text-gray-800 mb-4 border-b-2 pb-2">
+                    <i class="fas fa-cogs text-blue-500 mr-2"></i>Recommended Technical Controls
+                </h2>
+                <ul class="list-disc list-inside space-y-2 text-gray-700">
+                    {% for item in controls %}
+                    <li class="pl-4"><span class="font-medium">{{ item.text }}</span> <span class="text-gray-500 text-sm ml-2">({{ item.reference }})</span></li>
+                    {% endfor %}
+                </ul>
+            </div>
+
+            <div>
+                <h2 class="text-2xl font-bold text-gray-800 mb-4 border-b-2 pb-2">
+                    <i class="fas fa-exclamation-triangle text-red-500 mr-2"></i>Initial Risk Assessment Checklist
+                </h2>
+                <ul class="list-disc list-inside space-y-2 text-gray-700">
+                    {% for item in risks %}
+                    <li class="pl-4"><span class="font-medium">{{ item.text }}</span> <span class="text-gray-500 text-sm ml-2">({{ item.reference }})</span></li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+
+        <div class="mt-12 text-center text-gray-500 text-sm">
+            <p>Generated by ASPRG, a tool for consultants to streamline security documentation.</p>
+        </div>
+    </div>
+</body>
+</html>
