@@ -1,3 +1,4 @@
+<!-- templates/report.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -26,7 +27,7 @@
                 </h2>
                 <ul class="list-disc list-inside space-y-2 text-gray-700">
                     {% for item in policy %}
-                    <li class="pl-4"><span class="font-medium">{{ item }}</span></li>
+                    <li class="pl-4"><span class="font-medium">{{ item.text }}</span> <span class="text-gray-500 text-sm ml-2">({{ item.reference }})</span></li>
                     {% endfor %}
                 </ul>
             </div>
@@ -37,7 +38,7 @@
                 </h2>
                 <ul class="list-disc list-inside space-y-2 text-gray-700">
                     {% for item in controls %}
-                    <li class="pl-4"><span class="font-medium">{{ item }}</span></li>
+                    <li class="pl-4"><span class="font-medium">{{ item.text }}</span> <span class="text-gray-500 text-sm ml-2">({{ item.reference }})</span></li>
                     {% endfor %}
                 </ul>
             </div>
@@ -48,7 +49,7 @@
                 </h2>
                 <ul class="list-disc list-inside space-y-2 text-gray-700">
                     {% for item in risks %}
-                    <li class="pl-4"><span class="font-medium">{{ item }}</span></li>
+                    <li class="pl-4"><span class="font-medium">{{ item.text }}</span> <span class="text-gray-500 text-sm ml-2">({{ item.reference }})</span></li>
                     {% endfor %}
                 </ul>
             </div>
