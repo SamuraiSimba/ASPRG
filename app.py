@@ -4,10 +4,30 @@ from asprg_data import FRAMEWORKS
 
 app = Flask(__name__)
 
+# New dictionary for dynamic content based on business goals
+DYNAMIC_CONTENT = {
+    "e-commerce": {
+        "policy_statements": [{"text": "A policy for secure online payment processing must be established and documented.", "reference": "Dynamic Recommendation"}],
+        "technical_controls": [{"text": "Implement a secure web application firewall (WAF) to protect the e-commerce platform.", "reference": "Dynamic Recommendation"}],
+    },
+    "expansion": {
+        "policy_statements": [{"text": "Legal and compliance teams must review data residency requirements before expanding into new jurisdictions.", "reference": "Dynamic Recommendation"}],
+        "technical_controls": [{"text": "Perform a Privacy Impact Assessment (PIA) for any new products or services in different markets.", "reference": "Dynamic Recommendation"}],
+    }
+}
+
+def add_dynamic_content(business_goals, policy_list, controls_list):
+    """Adds dynamic content to the report based on keywords in business goals."""
+    goals_lower = business_goals.lower()
+    for keyword, content in DYNAMIC_CONTENT.items():
+        if keyword in goals_lower:
+            policy_list.extend(content["policy_statements"])
+            controls_list.extend(content["technical_controls"])
+    return policy_list, controls_list
+
 @app.route('/', methods=['GET'])
 def index():
     """Renders the main form for client input."""
-    # Pass the keys of the top-level FRAMEWORKS dictionary to the template
     return render_template('index.html', frameworks=FRAMEWORKS.keys(), frameworks_data=FRAMEWORKS)
 
 @app.route('/generate-report', methods=['POST'])
@@ -22,13 +42,15 @@ def generate_report():
     generated_controls = []
     generated_risks = []
     
-    # Loop through the selected domains and pull the relevant data for the chosen framework
     if selected_framework in FRAMEWORKS:
         for domain in selected_domains:
             if domain in FRAMEWORKS[selected_framework]["domains"]:
                 generated_policy.extend(FRAMEWORKS[selected_framework]["domains"][domain]["policy_statements"])
                 generated_controls.extend(FRAMEWORKS[selected_framework]["domains"][domain]["technical_controls"])
                 generated_risks.extend(FRAMEWORKS[selected_framework]["domains"][domain]["risk_checklist"])
+
+    # Call the new function to add dynamic content
+    generated_policy, generated_controls = add_dynamic_content(business_goals, generated_policy, generated_controls)
 
     return render_template(
         'report.html',
